@@ -1,10 +1,13 @@
+var localCopy = {};
+var localCopyLS = {};
+
 function Article (opts) {
   for (keys in opts) {
     this[keys] = opts[keys];
   }
 }
 
-/* TODO: Instead of a global `articles = []` array, let's track this list of all
+/* DONE: Instead of a global `articles = []` array, let's track this list of all
  articles directly on the constructor function. Note: it is NOT on the prototype.
  In JavaScript, functions are themselves objects, which means we can add
  properties/values to them at any time. In this case, we have a key:value pair
@@ -30,7 +33,7 @@ Article.prototype.toHtml = function(scriptTemplateId) {
  call these "class-level" functions, that are relevant to the entire "class"
  of objects that are Articles, rather than just one instance. */
 
-/* TODO: Refactor this code into a function for greater control.
+/* DONE: Refactor this code into a function for greater control.
     It will take in our data, and process it via the Article constructor: */
 Article.loadAll = function(dataWePassIn) {
   dataWePassIn.sort(function(a,b) {
@@ -43,32 +46,71 @@ Article.loadAll = function(dataWePassIn) {
 
 /* This function below will retrieve the data from either a local or remote
  source, process it, then hand off control to the View: */
-Article.fetchAll = function() {
-  if (localStorage.hackerIpsum) {
-    /* When our data is already in localStorage:
-     1. We can process and load it,
-     2. Then we can render the index page */
-    // Article.loadAll(//TODO: Invoke with our localStorage!);
-    // TODO: Now let's render the index page.
-  } else {
-    /* TODO: Otherwise, without our localStorage data we need to:
-    - Retrieve our JSON file asynchronously
-      (which jQuery method is best for this?).
-    Within this jQuery method, we should:
-      1. Load our JSON data,
-      2. Store that same data in localStorage so we can skip the server call next time,
-      3. And then render the index page. */
-  }
-};
+
+// Article.fetchAll = function() {
+//   if (localStorage.hackerIpsum) {
+//     /* When our data is already in localStorage:
+//      1. We can process and load it,
+//      2. Then we can render the index page */
+//     // Article.loadAll(//TODO: Invoke with our localStorage!);
+//     localCopy = JSON.parse(localStorage.getItem('hackerIpsum'));
+//     Article.loadAll(localCopy);
+//     // TODO: Now let's render the index page.
+//     articleView.renderIndexPage();
+//   } else {
+//     /* TODO: Otherwise, without our localStorage data we need to:
+//     - Retrieve our JSON file asynchronously
+//       (which jQuery method is best for this?).
+//     Within this jQuery method, we should:
+//       1. Load our JSON data,
+//       2. Store that same data in localStorage so we can skip the server call next time,
+//       3. And then render the index page. */
+//     console.log('initial loading of hackerIpsum from server');
+//     $.getJSON('data/hackerIpsum.json', function(data) {
+//       // localCopy = Article.loadAll(data);
+//       localStorage.setItem('hackerIpsum', JSON.stringify(data));
+//       Article.loadAll(data);
+//       articleView.renderIndexPage();
+//     });
+//   }
+// };
 
 /* Great work so far! STRETCH GOAL TIME!? Refactor your fetchAll above, or
-   get some additional typing practice here. Our main goal in this part of the
+   get some additional typing practice here. Our main goal in this part oaf the
    lab will be saving the eTag located in Headers, to see if it's been updated!
-
-  Article.fetchAll = function() {
-    if (localStorage.hackerIpsum) {
-      // Let's make a request to get the eTag (hint: you may need to use a different
-      // jQuery method for this more explicit request).
-    } else {}
-  }
 */
+Article.fetchAll = function() {
+  if (localStorage.hackerIpsum) {
+    // Let's make a request to get the eTag (hint: you may need to use a different
+    // jQuery method for this more explicit request).
+    $.ajax({
+      type: 'HEAD',
+      url: '/data/hackerIpsum.json',
+      success: function (data, message, xhr) {
+        var eTag = xhr.getResponseHeader('eTag');
+        if ( !localStorage.eTag || eTag !== localStorage.eTag ) {
+          localStorage.eTag = eTag;
+          $.getJSON('data/hackerIpsum.json', function(data) {
+            // localCopy = Article.loadAll(data);
+            localStorage.setItem('hackerIpsum', JSON.stringify(data));
+            Article.loadAll(data);
+            articleView.renderIndexPage();
+          });
+        }
+        else {
+          localCopy = JSON.parse(localStorage.getItem('hackerIpsum'));
+          Article.loadAll(localCopy);
+          // TODO: Now let's render the index page.
+          articleView.renderIndexPage();
+        }
+      }
+    });
+  } else {
+    $.getJSON('data/hackerIpsum.json', function(data) {
+      // localCopy = Article.loadAll(data);
+      localStorage.setItem('hackerIpsum', JSON.stringify(data));
+      Article.loadAll(data);
+      articleView.renderIndexPage();
+    });
+  }
+};

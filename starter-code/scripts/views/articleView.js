@@ -97,5 +97,9 @@ articleView.renderIndexPage = function() {
   articleView.handleAuthorFilter();
   articleView.handleMainNav();
   articleView.setTeasers();
-  // TODO: start the retrieval process for our data!
+
 };
+
+// TODO: start the retrieval process for our data!
+console.log('calling fetchAll');
+Article.fetchAll();
